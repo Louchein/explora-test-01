@@ -1,7 +1,6 @@
 {
   "name": "node-desde-ceros",
   "version": "1.0.0",
-  "description": "",
   "main": "index.js",
   "scripts": {
     "start": "node server.js",
@@ -11,6 +10,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "express": "^4.17.1"
-  }
+    "express": "^4.17.1",
+    "three": "^0.133.1"
+  },
+  "devDependencies": {},
+  "description": ""
 }
