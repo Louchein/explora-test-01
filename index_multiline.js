@@ -3,10 +3,10 @@
 import * as THREE from './three/build/three.module.js';
 
 import { OrbitControls } from './three/examples/jsm/controls/OrbitControls.js';
+import { TWEEN } from './three/examples/jsm/libs/tween.module.min.js';
 
 
-
-let scene, camera, renderer, group, groupBckgnd, raycaster;
+let scene, camera, renderer, group, groupBckgnd;
 
 let sphere, sphere2, sphere3;
 
@@ -16,19 +16,24 @@ let time;
 
 let arrMeshes = [];
 
-// let levels = {};
+let horzSpacer = 11;
+let vertSpacer = 8;
 
-
-// let auxCanvas;
+let lineMaterial;
 
 const pointer = new THREE.Vector2();
 const radius = 100;
 
+let INTERSECTED;
+let mouse = new THREE.Vector3();;
+let raycaster;
+
+let modal_isOn = false;
+
 init();
 
 function init() {
-    // raycaster = new THREE.Raycaster();
-    // initWords();
+    raycaster = new THREE.Raycaster();
 
     scene = new THREE.Scene();
 
@@ -42,11 +47,20 @@ function init() {
         antialias: true
     });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    // renderer.setSize(width, height);
     renderer.setPixelRatio(window.devicePixelRatio);
-    // parentDom.appendChild(renderer.domElement);
 
     controls = new OrbitControls(camera, renderer.domElement);
+    // Rotation limits
+    controls.minPolarAngle = 0.6;
+    controls.maxPolarAngle = 2.3;
+    controls.minAzimuthAngle = -1;
+    controls.maxAzimuthAngle = 1;
+    // Focus target
+    controls.target = new THREE.Vector3(40, -30, 0);
+    controls.update();
+
+    // console.dir(controls);
+
 
     const bckgndLoader = new THREE.TextureLoader();
     scene.background = bckgndLoader.load('/textures/bckgnd_general-100.jpg');
@@ -199,8 +213,9 @@ function init() {
     }
 
     initGeometries();
-    initSprites();   // docs aux flotantes
+    // initSprites();   // docs aux flotantes
     // drawWords();
+
 
     groupBckgnd = group.clone();    // Copia para hacer las grandes que girarían más lento
 
@@ -208,229 +223,38 @@ function init() {
     // scene.add(groupBckgnd);  
     let groupText = new THREE.Group();
 
+    generateText();
 
-    // mapa object
-    const fullMapa = {
-        0: {
-            texto: `Cows`,
-            position: new THREE.Vector3(),
-            hijos: {
-                0: {
-                    texto: `Leather`,
-                    position: new THREE.Vector3(),
-                    hijos: {
-                        0: {
-                            texto: `Purses`,
-                            position: new THREE.Vector3(),
-                            hijos: null
-                        },
-                        1: {
-                            texto: `Couches`,
-                            position: new THREE.Vector3(),
-                            hijos: null
-                        },
-                        2: {
-                            texto: `Coats`,
-                            position: new THREE.Vector3(),
-                            hijos: {
-                                0: {
-                                    texto: `Laconcha`,
-                                    position: new THREE.Vector3(),
-                                    hijos: null
-                                },
-                                1: {
-                                    texto: `foo`,
-                                    position: new THREE.Vector3(),
-                                    hijos: {
-                                        0: {
-                                            texto: `Purses`,
-                                            position: new THREE.Vector3(),
-                                            hijos: null
-                                        },
-                                        1: {
-                                            texto: `Couches`,
-                                            position: new THREE.Vector3(),
-                                            hijos: null
-                                        },
-                                        2: {
-                                            texto: `Coats`,
-                                            position: new THREE.Vector3(),
-                                            hijos: null
-                                        }
-                                    }
-                                }
+    // window.addEventListener('mousemove', onMouseMove, false);
+    document.addEventListener('mousemove', onMouseMove, false);
 
-                            }
-                        }
-                    }
-                },
-                1: {
-                    texto: `Milk`,
-                    position: new THREE.Vector3(),
-                    hijos: {
-                        0: {
-                            texto: `Cats`,
-                            position: new THREE.Vector3(),
-                            hijos: null
-                        },
-                        1: {
-                            texto: `Humans`,
-                            position: new THREE.Vector3(),
-                            hijos: null
-                        }
-                    }
-                }
+    document.addEventListener('mousedown', onMouseDown, false);
 
-            }
-        },
-        1: {
-            texto: `2do gran objeto hijo`,
-            position: new THREE.Vector3(),
-            hijos: null
+    var modalBg = document.querySelector('.modal-bg');
+    var modalClose = document.querySelector('.modal-close');
+
+    modalClose.addEventListener('click', function () {      // Cierra el modal al hacer clic en la X
+        modalBg.classList.remove('bg-active');
+        modal_isOn = false;
+    });
+
+    modalBg.addEventListener('click', function (event) {
+        if (event.target.matches(".modal-bg") || !event.target.closest(".modal")) {
+            modalBg.classList.remove('bg-active');
+            modal_isOn = false;
         }
-
-    };
-
-    const easyArr = [
-        "Cows", [
-            "Leather", [
-                "Purses",
-                "Couches",
-                "Coats", [
-                    "laconcha",
-                    "foo", [
-                        "Purses",
-                        "Couches",
-                        "Coats"
-                    ]
-                ]
-            ],
-            "Milk", [
-                "Cats",
-                "Humans"
-            ]
-        ],
-        "tier_2"
-    ];
-
-    const person = {
-        firstName: "John",
-        lastName: {
-            doe: "Doe",
-            joe: "Joe"
-        },
-        age: 50,
-        eyeColor: "blue"
-    };
-
-    const basicArr =
-        [
-            "",
-            [
-                " 0987654",
-                " ppppppppppppppppp"
-            ],
-            " Manzana biche ", [
-                " Hello! ",
-                "lklñjhgklñ",
-                `poiuytre`
-            ],
-            " esto sí debería funcionar",
-            [
-                " nooooooope ", [
-                    " blablabla ",
-                    `asdsafasfaf`
-                ]
-            ]
-
-        ]
-    //
-
-    const basic = {
-        0: {
-            texto: `  Cows  `,
-            position: new THREE.Vector3(),
-            hijos: {
-                0: {
-                    texto: `  Leather  `,
-                    position: new THREE.Vector3(),
-                    hijos: null
-                },
-                1: {
-                    texto: `Milk`,
-                    position: new THREE.Vector3(),
-                    hijos: {
-                        0: {
-                            texto: `Cats`,
-                            position: new THREE.Vector3(),
-                            hijos: null
-                        },
-                        1: {
-                            texto: `Humans`,
-                            position: new THREE.Vector3(),
-                            hijos: null
-                        }
-                    }
-                }
-            }
-        },
-        1: {
-            texto: `  2do gran obj  \n  eto hijo  `,
-            position: new THREE.Vector3(),
-            hijos: null
-        }
-    }
-
-    // drawMap(fullMapa);  // acá se usa children()
-    // drawMap(basic);      //OJO
-    generateText(basic);
-
-
-    // console.dir(getNested(fullMapa));
-
-    function checkNested(obj, level, ...rest) {
-        if (obj === undefined) return false
-        if (rest.length == 0 && obj.hasOwnProperty(level)) return true
-        return checkNested(obj[level], ...rest)
-    }
-    // console.dir(checkNested(fullMapa, 'Cows'));     //true                  /////////////////
-    // console.dir(checkNested(fullMapa.Cows, 'Leather'));     //true          /////////////////
+    });
 
     requestAnimationFrame(animate);
 
-}
+}   // END init() //////////////////////////////////////////////////////////////////////////
 
-// debo restarle 1 a lo que devuelve esta función cuando use los objetos custom
-function depthOf(object) {
-    var level = 1;
-    for (var key in object) {
-        if (!object.hasOwnProperty(key)) continue;
 
-        if (typeof object[key] == 'object') {
-            var depth = depthOf(object[key]) + 1;
-            level = Math.max(depth, level);
-        }
-    }
-    return level;
-}
-
-function children(parent) {
-    for (var propName in parent) {
-        if (parent.hasOwnProperty(propName)) {
-            if (typeof parent[propName] == 'object') {
-                parent[propName].rootName = propName;
-                children(parent[propName]);
-                // console.log(`${propName}: ${parent[propName]}, child of: ${parent.rootName}`);
-            }
-        }
-    }
-
-}
-
-function generateText(mapa) {
+function generateText() {
     // text sprite
     var config1 = {
-        fontFace: 'Ariel',
+        // fontFace: 'Ariel',
+        fontFace: 'Raleway',
         fontSize: 26,
         textColor: 'rgba(255, 255, 255, 1)',
         // fontBold: true,
@@ -441,113 +265,331 @@ function generateText(mapa) {
         // borderRadius: 20, //full redondo -> 38
         backgroundColor: 'rgba(0, 0, 0, 0.8)'
     };
-    var text1 = [];
+    // Azules
+    let azul_fuerte = {
+        fontSize: 50,
+        textColor: 'rgba(238, 235, 238, 1)',
+        borderColor: 'rgba(88, 150, 179, 0.0)',
+        backgroundColor: 'rgba(118, 168, 191, 0.8)'
+    }
+    let azul_claro = {
+        textColor: 'rgba(47, 80, 116, 1)',
+        borderColor: 'rgba(88, 150, 179, 0.0)',
+        backgroundColor: 'rgba(222, 231, 240, 0.8)'
+    }
+    let azul_vacio = {
+        textColor: 'rgba(242, 239, 242, 1)',
+        borderColor: 'rgba(222, 231, 240, 0.8)',
+        backgroundColor: 'rgba(28, 31, 36, 0.6)'
+    }
 
-    var posX = 0;
-    var posY = 0;
-    function goDeep(mapa) {
-        for (var key in mapa) {  // Arroja siempre(?) 3 keys -> "texto", "position" y "hijos"
-            // "position"
-            mapa[key].position.x = posX;
-            mapa[key].position.y = posY;
-            console.dir(mapa[key].position);
+    // Verdes
+    let verde_fuerte = {
+        textColor: 'rgba(238, 235, 238, 1)',
+        borderColor: 'rgba(88, 150, 179, 0.0)',
+        backgroundColor: 'rgba(123, 165, 67, 0.8)'
+    }
+    let verde_claro = {
+        textColor: 'rgba(52, 74, 23, 1)',
+        borderColor: 'rgba(88, 150, 179, 0.0)',
+        backgroundColor: 'rgba(215, 229, 203, 0.8)'
+    }
+    let verde_vacio = {
+        textColor: 'rgba(215, 229, 203, 1)',
+        borderColor: 'rgba(215, 229, 203, 0.8)',
+        backgroundColor: 'rgba(28, 31, 36, 0.6)'
+    }
+
+    // Rojos
+    let rojo_fuerte = {
+        textColor: 'rgba(238, 235, 238, 1)',
+        borderColor: 'rgba(88, 150, 179, 0.0)',
+        backgroundColor: 'rgba(248, 151, 78, 0.8)'
+    }
+    let rojo_claro = {
+        textColor: 'rgba(128, 61, 33, 1)',
+        borderColor: 'rgba(88, 150, 179, 0.0)',
+        backgroundColor: 'rgba(232, 205, 189, 0.8)'
+    }
+    let rojo_vacio = {
+        textColor: 'rgba(215, 229, 203, 1)',
+        borderColor: 'rgba(232, 205, 189, 0.8)',
+        backgroundColor: 'rgba(28, 31, 36, 0.6)'
+    }
+
+    // Amarillos
+    let amarillo_fuerte = {
+        textColor: 'rgba(238, 235, 238, 1)',
+        borderColor: 'rgba(88, 150, 179, 0.0)',
+        backgroundColor: 'rgba(229, 186, 64, 0.8)'
+    }
+    let amarillo_claro = {
+        textColor: 'rgba(98, 61, 35, 1)',
+        borderColor: 'rgba(88, 150, 179, 0.0)',
+        backgroundColor: 'rgba(240, 231, 190, 0.8))'
+    }
+    let amarillo_vacio = {
+        textColor: 'rgba(215, 229, 203, 1)',
+        borderColor: 'rgba(240, 231, 190, 0.8)',
+        backgroundColor: 'rgba(28, 31, 36, 0.6)'
+    }
+
+    // Morados
+    let morado_fuerte = {
+        textColor: 'rgba(238, 235, 238, 1)',
+        borderColor: 'rgba(88, 150, 179, 0.0)',
+        backgroundColor: 'rgba(181, 112, 197, 0.8)'
+    }
+    let morado_claro = {
+        textColor: 'rgba(87, 16, 104, 1)',
+        borderColor: 'rgba(88, 150, 179, 0.0)',
+        backgroundColor: 'rgba(224, 203, 229, 0.8)'
+    }
+    let morado_vacio = {
+        textColor: 'rgba(215, 229, 203, 1)',
+        borderColor: 'rgba(224, 203, 229, 0.8)',
+        backgroundColor: 'rgba(28, 31, 36, 0.6)'
+    }
+
+    // Conector
+    let conector = {
+        fontSize: 50,
+        textColor: 'rgba(238, 235, 238, 1)',
+        borderColor: 'rgba(88, 150, 179, 0.0)',
+        backgroundColor: 'rgba(181, 112, 197, 0.0)'
+    }
+    //------------------------------------------------------------------------------------------
+    // x_axis, lvl
+    var textSprite =
+        makeTextSprite("  Discurso en época  \n  de pandemia  ",
+            rojo_fuerte,
+            0, 0);
+    scene.add(textSprite);
+
+    let textSprite_2 =
+        makeTextSprite("  Sí, hay un discurso de resistencia  ",
+            rojo_fuerte,
+            3.5, 0);
+    scene.add(textSprite_2);
+
+    drawSingleLine(textSprite, textSprite_2);
+    //       ADD FILE HERE      // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+    drawPreviewFlotant(textSprite_2, 'textures/Transversales_/Discursos en epoca de pandemia/Ima.1MD.png', "portrait");
+
+    //---------------------------------------------
+
+    textSprite =
+        makeTextSprite("  Querer formarse  ",
+            rojo_vacio,
+            7, 0);
+    scene.add(textSprite);
+    drawSingleLine(textSprite, textSprite_2);
+
+    textSprite =
+        makeTextSprite("  Querer informarse  ",
+            rojo_vacio,
+            7, 1);
+    scene.add(textSprite);
+    drawSingleLine(textSprite, textSprite_2);
+
+    textSprite =
+        makeTextSprite("  Llevar procesos cole  ",
+            rojo_vacio,
+            7, 2);
+    scene.add(textSprite);
+    drawSingleLine(textSprite, textSprite_2);
+    //---------------------------------------------
+
+    textSprite_2 =
+        makeTextSprite("  Dentro y desde  \n  prácticas artísticas  ",
+            rojo_fuerte,
+            7, 3.5);
+    scene.add(textSprite_2);
+    drawSingleLine(textSprite, textSprite_2);
+
+    textSprite =
+        makeTextSprite("  fuera de a  \n  academia  ",
+            rojo_vacio,
+            9.2, 3.5);
+    scene.add(textSprite);
+    drawSingleLine(textSprite, textSprite_2);
+
+    textSprite =
+        makeTextSprite("  Abre la posibilidad  ",
+            verde_fuerte,
+            0, 3.5);
+    scene.add(textSprite);
+    drawSingleLine(textSprite, textSprite_2);
+    //---------------------------------------------
+
+    textSprite_2 =
+        makeTextSprite("  de  ",
+            conector,
+            0, 4.3);
+    scene.add(textSprite_2);
+    drawSingleLine(textSprite, textSprite_2);
+
+    let textSprite_4 =
+        makeTextSprite("  Ejercicio de acciones performáticas  ",
+            verde_fuerte,
+            0, 6.3);
+    scene.add(textSprite_4);
+    drawSingleLine(textSprite_4, textSprite_2);
+    //       ADD FILE HERE      // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+    drawPreviewFlotant(textSprite_4, 'textures/Transversales_/Discursos en epoca de pandemia/Ima.3MD.png', "landscape");
+
+    textSprite =
+        makeTextSprite("  Entrar  ",
+            verde_vacio,
+            1, 4.5);
+    scene.add(textSprite);
+    drawSingleLine(textSprite, textSprite_2);
+
+    let textSprite_3 =
+        makeTextSprite("  Crear  ",
+            verde_vacio,
+            1, 5.3);
+    scene.add(textSprite_3);
+    drawSingleLine(textSprite_3, textSprite_2);
+
+    textSprite_2 =
+        makeTextSprite("  un  ",
+            conector,
+            2, 5);
+    scene.add(textSprite_2);
+    drawSingleLine(textSprite, textSprite_2);
+    drawSingleLine(textSprite_3, textSprite_2);
+    //---------------------------------------------
+
+    textSprite =
+        makeTextSprite("  Diálogo  ",
+            verde_fuerte,
+            3, 5);
+    scene.add(textSprite);
+    drawSingleLine(textSprite, textSprite_2);
+
+    textSprite_2 =
+        makeTextSprite("  de  ",
+            conector,
+            4, 5);
+    scene.add(textSprite_2);
+    drawSingleLine(textSprite, textSprite_2);
+
+    textSprite =
+        makeTextSprite("  Crítica  ",
+            verde_vacio,
+            5, 4.5);
+    scene.add(textSprite);
+    drawSingleLine(textSprite, textSprite_2);
+
+    textSprite =
+        makeTextSprite("  Autoreflexión  ",
+            verde_vacio,
+            5.2, 5.5);
+    scene.add(textSprite);
+    drawSingleLine(textSprite, textSprite_2);
+    //---------------------------------------------
+
+    textSprite =
+        makeTextSprite('  "imágenes del cuerpo"  ',
+            verde_fuerte,
+            4, 6.3);
+    scene.add(textSprite);
+    drawSingleLine(textSprite, textSprite_4);
+    //       ADD FILE HERE      // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+    drawPreviewFlotant(textSprite, 'textures/Transversales_/Discursos en epoca de pandemia/Ima2.MD.png', "landscape");
 
 
-            // "texto"
-            var textSprite = makeTextSprite(mapa[key].texto, config1);
+    textSprite_2 =
+        makeTextSprite("  ¿Cuáles otras imágenes?  ",
+            verde_fuerte,
+            4, 7.5);
+    scene.add(textSprite_2);
+    drawSingleLine(textSprite, textSprite_2);
 
-            textSprite.position.set(mapa[key].position.x, mapa[key].position.y, 0);
-            scene.add(textSprite);
+    textSprite_3 =
+        makeTextSprite("  ¿Cuántas imagenes pueden servir como  \n  resistencia frente a algo?  ",
+            verde_vacio,
+            8.5, 6.7);
+    scene.add(textSprite_3);
+    drawSingleLine(textSprite_3, textSprite);
 
-            // "hijos"
-            if (mapa[key].hijos != null) {  // Si hijos no es nulo, entonces...
-                posY -= 15;
-                drawSingleLine(textSprite, goDeep(mapa[key].hijos));
+    textSprite_3 =
+        makeTextSprite("  Yo el cuerpo como recurso  ",
+            verde_vacio,
+            8, 7.8);
+    scene.add(textSprite_3);
+    drawSingleLine(textSprite_3, textSprite);
 
-                console.log(`nopo null $ {}`);
-                console.dir(mapa[key].hijos);
-                // let aux = goDeep(mapa[key].hijos);
-                // drawSingleLine(_sprite Padre_, _sprite Hijo_);
-            }
+}
 
-            posX += 30;
+var posX = 0;
+var posY = 0;
 
-            return textSprite;
+function goDeep(mapa) {
+    for (var key in mapa) {  // Arroja siempre(?) 3 keys -> "texto", "position" y "hijos"
+        // "position"
+        mapa[key].position.x = posX;
+        mapa[key].position.y = posY;
+        console.dir(mapa[key].position);
+
+        // "texto"
+        var textSprite = makeTextSprite(mapa[key].texto, azul_vacio);
+
+        textSprite.position.set(mapa[key].position.x, mapa[key].position.y, 0);
+        scene.add(textSprite);
+
+        // "hijos"
+        if (mapa[key].hijos != null) {  // Si hijos no es nulo, entonces...
+            posY -= 15;
+            drawSingleLine(textSprite, goDeep(mapa[key].hijos));
+
+            console.log(`nopo null $ {}`);
+            console.dir(mapa[key].hijos);
+            // let aux = goDeep(mapa[key].hijos);
+            // drawSingleLine(_sprite Padre_, _sprite Hijo_);
         }
 
+        posX += 30;
+
+        return textSprite;
     }
 
-    goDeep(mapa);
 }
 
-// var textSprite1 = makeTextSprite(mapa[0].texto, config1);
-// textSprite1.position.set(0, 0, 0);
-// scene.add(textSprite1);
-
-
-function drawMap(fullMapa) {
-    // console.dir(fullMapa);
-    // children(fullMapa);
-
-    // const depth = getArrayDepth(fullMapa);
-    // console.log(`getArrayDepth: ${depth}`);
-
-    let groupText = new THREE.Group();
-
-    let spriteyX;
-    if (fullMapa[0].isArray) {
-        spriteyX = makeTextSprite(fullMapa[0]);
-        spriteyX.position.set(12.3, 0.1, 3);
-        groupText.add(spriteyX);
-    }
-
-    var spriteyA = makeTextSprite(` Hella, 
-    aligazza `);
-    spriteyA.position.set(-50, -25, 3);
-    groupText.add(spriteyA);
-    // groupSprites.add(spritey);
-
-    var spriteyB = makeTextSprite(" Manzanaza de la concha! ");
-    spriteyB.position.set(12.3, 0.1, 3);
-    groupText.add(spriteyB);
-    // groupSprites.add(spritey);
-
-    scene.add(groupText);
-
-
-    drawSingleLine(spriteyA, spriteyB);
-    // drawSingleLine(spriteyA, spriteyX);
-}
 
 function drawSingleLine(objA, objB) {
+    // let posA = JSON.parse(JSON.stringify(objA.position));
+    // let posB = JSON.parse(JSON.stringify(objB.position));
     let posA = objA.position;
     let posB = objB.position;
-    const material = new THREE.LineBasicMaterial({
-        color: 0xc0c0c0
+    lineMaterial = new THREE.LineBasicMaterial({
+        color: 0xc0c0c0,
+        // transparent: true,
+        opacity: 0.4
     });
 
     const points = [];
-    points.push(posA);
-    points.push(posB);
+    points.push(posA, posB);
 
     const geometry = new THREE.BufferGeometry().setFromPoints(points);
-
-    const line = new THREE.Line(geometry, material);
+    const line = new THREE.Line(geometry, lineMaterial);
     scene.add(line);
 }
 
-function makeTextSprite(message, parameters) {
+function makeTextSprite(message, parameters, x_axis, lvl) {
     parameters || (parameters = {});
 
-    var fontFace = parameters.hasOwnProperty("fontface") ? parameters["fontface"] : "Helvetica";
-    var fontSize = parameters.hasOwnProperty("fontsize") ? parameters["fontsize"] : 50;
+    // var fontFace = parameters.hasOwnProperty("fontface") ? parameters["fontface"] : "Helvetica";
+    var fontFace = parameters.hasOwnProperty("fontFace") ? parameters["fontFace"] : "Raleway";
+    var fontSize = parameters.hasOwnProperty("fontSize") ? parameters["fontSize"] : 50;
     var textColor = parameters.hasOwnProperty("textColor") ? parameters["textColor"] : { r: 0, g: 0, b: 0, a: 1.0 };
     var fontBold = parameters.hasOwnProperty('fontBold') ? parameters['fontBold'] : false;
     var fontItalic = parameters.hasOwnProperty('fontItalic') ? parameters['fontItalic'] : false;
-    var textAlign = parameters.hasOwnProperty('textAlign') ? parameters['textAlign'] : 'left';
-    var borderThickness = parameters.hasOwnProperty("borderThickness") ? parameters["borderThickness"] : 4;
-    var borderColor = parameters.hasOwnProperty("borderColor") ? parameters["borderColor"] : { r: 0, g: 0, b: 0, a: 1.0 };
-    var borderRadius = parameters.hasOwnProperty('borderRadius') ? parameters['borderRadius'] : 20;
+    var textAlign = parameters.hasOwnProperty('textAlign') ? parameters['textAlign'] : 'center';
+    var borderThickness = parameters.hasOwnProperty("borderThickness") ? parameters["borderThickness"] : 6;
+    var borderColor = parameters.hasOwnProperty("borderColor") ? parameters["borderColor"] : { r: 0, g: 0, b: 0, a: 0.8 };
+    var borderRadius = parameters.hasOwnProperty('borderRadius') ? parameters['borderRadius'] : 38;
     var backgroundColor = parameters.hasOwnProperty("backgroundColor") ? parameters["backgroundColor"] : { r: 0, g: 0, b: 255, a: 0.8 };
 
     var ruler = document.createElement('canvas').getContext('2d');
@@ -566,10 +608,12 @@ function makeTextSprite(message, parameters) {
     // 1.4 is extra height factor for text below baseline: g,j,p,q.
     var textHeight = fontSize * 1.4 * textLines.length;
 
-    var canvas = document.createElement('canvas');      // Tiene que crear otro canvas para poder
-    canvas.width = _ceilPow2(textWidth);
-    canvas.height = _ceilPow2(textHeight);
-    var context = canvas.getContext('2d');              // pedir este context 2D. ¿un canvas por cada palabra???
+    var canvas = document.createElement('canvas');      // Tiene que crear otro canvas para poder...
+    // canvas.width = _ceilPow2(textWidth);
+    canvas.width = textWidth + 20;
+    // canvas.height = _ceilPow2(textHeight);
+    canvas.height = textHeight + 20;
+    var context = canvas.getContext('2d');              // ...pedir este context 2D. ¿un canvas por cada palabra? Sí.
 
     context.font = ruler.font;
     context.fillStyle = backgroundColor;
@@ -598,15 +642,26 @@ function makeTextSprite(message, parameters) {
     texture.needsUpdate = true;
     var spriteMaterial = new THREE.SpriteMaterial({
         map: texture,
-        transparent: true
+        transparent: true,
     });
     var sprite = new THREE.Sprite(spriteMaterial);
+    sprite.name = "texto";
 
     // set the size of the sprite to just a portion
-    // sprite.scale.set(0.5 * fontsize, 0.25 * fontsize, 1);
-    var auxScale = 10;
+    // sprite.scale.set(0.5 * fontSize, 0.25 * fontSize, 1);
+    var auxScale = 20.5;
     sprite.scale.set(canvas.width / auxScale, canvas.height / auxScale, 1);
 
+    var auxWidth = (textWidth) / (0.4 * fontSize);
+    var auxHeight = (textHeight + borderThickness) / (0.4 * fontSize);
+    // testRectangleSize(canvas, context, metrics, fontSize, borderThickness, textWidth, textHeight, borderRadius)
+
+    sprite.width = auxWidth;
+    sprite.height = auxHeight;
+    sprite.numOfLines = textLines.length;
+
+    // sprite.position.set(x_axis * horzSpacer, -lvl * vertSpacer, Math.random() * 5);
+    sprite.position.set(x_axis * horzSpacer, -lvl * vertSpacer, 0);
 
     return sprite;
 
@@ -684,9 +739,41 @@ function drawConexion(positionA, positionB) {
     drawLines(lines);
 }
 
+// Esta función drawPreviewFlotant(parentSprite, path) sirve para agregar una preview flotante de un doc alrededor de un concepto específico
+// parentSprite es el concepto alrededor del cual debe flotar
+//
+function drawPreviewFlotant(parentSprite, path, orientation) {
+    const map = new THREE.TextureLoader().load(path);
+    const material = new THREE.SpriteMaterial({
+        map: map,
+        transparent: true,
+        opacity: 0.6,
+        color: Math.random() * 0xffffff
+    });
+
+    const sprite = new THREE.Sprite(material);
+    sprite.name = "doc";
+
+    let range = 7;
+    range = Math.floor(Math.random() * 2) == 0 ? -range : range;
+    sprite.position.x = -range * Math.random() + parentSprite.position.x;
+
+    range = Math.floor(Math.random() * 2) == 0 ? -range : range;
+    sprite.position.y = range * Math.random() + parentSprite.position.y;
+
+    range = Math.floor(Math.random() * 2) == 0 ? -range : range;
+    sprite.position.z = range * Math.random() - parentSprite.position.z - 10;
+
+    const auxScale = 1;
+    // sprite.scale.set(3, 5, 1);
+    orientation == "portrait" ? sprite.scale.set(9 * auxScale, 16 * auxScale, 1 * auxScale) : sprite.scale.set(16 * auxScale, 9 * auxScale, 1 * auxScale);
+
+    scene.add(sprite);
+}
+
 // Esta función initSprite() sirve para popular los docs adicionales flotantes alrededor de los conceptos
 function initSprites() {
-    const qtty = 10;
+    const qtty = 3;
     var coords = new THREE.Vector3();
     // sphere3.getWorldPosition(coords);
     // coords.x = sphere3.position.x;
@@ -724,6 +811,65 @@ function initSprites() {
     scene.add(groupSprites);
 }
 
+function onMouseMove(event) {
+    // calculate mouse position in normalized device coordinates
+    // (-1 to +1) for both components
+
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+
+    let rangoX = 20;      // mayor número, mayor apertura, mayor rango de movimiento 
+    rangoX = 1 / rangoX;
+
+    let rangoY = 10;      // mayor número, mayor apertura, mayor rango de movimiento 
+    rangoY = 1 / rangoY;
+
+    // controls.target = new THREE.Vector3(controls.target.x, controls.target.y, controls.target.z);
+    // controls.update();
+    // Tweening 
+    //  > permet de créer des images intermédiaires successives de telle sorte qu'une image s'enchaîne agréablement et de façon fluide avec la suivante.
+    controls.target = new THREE.Vector3((mouse.x * Math.PI) / rangoX, (mouse.y * Math.PI) / rangoY, 0);
+
+    // controls.target.x = THREE.MathUtils.lerp(controls.target.x, (mouse.x * Math.PI) / 10, 0.1);
+    // controls.update();
+
+    // controls.target.y = THREE.MathUtils.lerp(controls.target.y, (mouse.y * Math.PI) / 10, 0.1);
+    controls.update();
+
+}
+
+function onMouseDown(event) {
+
+    event.preventDefault();
+
+    // var modalBg = document.querySelector('.modal-bg');
+    // var modalClose = document.querySelector('.modal-close');
+
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+    mouse.unproject(camera);    // camera to use in the projection.
+    // console.dir(mouse);     // Devuelve el vector al que apunta el mouse
+
+    // check if interesected > 0
+    var auxInfo = checkIntersects();
+    if (auxInfo) {
+        showInfo(mouse, auxInfo);
+    }
+
+}
+
+function showInfo(coords, sprite) {
+    // console.log("--- yep.");
+    let currentImgSrc = sprite.material.map.image.currentSrc;   // typeof string
+    // console.dir(currentImgSrc);  // retorna source path de la imagen clicada
+    currentImgSrc = currentImgSrc.substring(currentImgSrc.indexOf("texture"));
+
+    document.querySelector('.modal-bg').classList.add('bg-active');
+    modal_isOn = true;
+    // Aquí es que debo mostrar o agregar al div la info que quiero
+    document.getElementById("main-image").src = currentImgSrc;
+}
+
 var update = function () {
     // change '0.003' for more aggressive animation
     var time = performance.now() * 0.001;
@@ -740,8 +886,17 @@ function lightsOn() {
 
 
 var t = 0;
-var delta = 0.0051;
+var delta = 0.01;
+var maxThreshold = 1;
+
 function animate() {
+    // console.log(`lineMaterial.opacity: ${lineMaterial.opacity}`);
+
+    // if (lineMaterial.opacity >= 1 || lineMaterial.opacity <= 0) {
+    //     delta = -delta;
+    // }
+    // lineMaterial.opacity += delta;
+
     t += delta;
     t %= Math.PI * 2;
 
@@ -766,25 +921,83 @@ function animate() {
     group.scale.y = 20;
     group.scale.z = 20;
 
-    update();
+    // update();
+
+    TWEEN.update();
 
     render();
     requestAnimationFrame(animate);
 }
 
+function checkIntersects() {
+    // calculate objects intersecting the picking ray
+    const intersects = raycaster.intersectObjects(scene.children, false);
+
+    if (intersects[0] != undefined) {
+        // console.dir(intersects[0]);     // >Object
+        // console.dir(intersects[0].object);      // >Sprite
+    }
+
+    if (intersects.length > 0 && intersects[0].object.name == "doc") {
+
+        if (INTERSECTED != intersects[0].object) {
+
+            if (INTERSECTED) {
+                INTERSECTED.material.opacity = INTERSECTED.currentOpacity;
+                INTERSECTED.material.color = INTERSECTED.currentColor;
+                INTERSECTED.scale.set(INTERSECTED.currentScale.x, INTERSECTED.currentScale.y, INTERSECTED.currentScale.z);
+                document.body.style.cursor = "auto";
+            }
+
+            if (intersects[0] != undefined) {
+                INTERSECTED = intersects[0].object;
+
+                INTERSECTED.currentOpacity = INTERSECTED.material.opacity;
+                INTERSECTED.currentColor = INTERSECTED.material.color;
+                INTERSECTED.currentScale = INTERSECTED.scale.clone();
+
+                INTERSECTED.material.opacity = 1;
+                INTERSECTED.material.color = new THREE.Color("rgb(255, 255, 255)");
+                const multiplier = 1.4;
+                INTERSECTED.scale.set(INTERSECTED.currentScale.x * multiplier, INTERSECTED.currentScale.y * multiplier, INTERSECTED.currentScale.z * multiplier);
+                !modal_isOn ? document.body.style.cursor = "pointer" : document.body.style.cursor = "auto";
+            }
+        }
+        return intersects[0].object;
+
+    } else {
+        if (INTERSECTED) {
+            INTERSECTED.material.opacity = INTERSECTED.currentOpacity;
+            INTERSECTED.material.color = INTERSECTED.currentColor;
+            INTERSECTED.scale.set(INTERSECTED.currentScale.x, INTERSECTED.currentScale.y, INTERSECTED.currentScale.z);
+            document.body.style.cursor = "auto";
+        }
+
+        INTERSECTED = null;
+    }
+}
+
 function render() {
+    // update the picking ray with the camera and mouse position
+    raycaster.setFromCamera(mouse, camera);
+
+    checkIntersects();
 
     renderer.render(scene, camera);
 }
 
-function testRectangleSize(canvas, context, metrics, fontsize, borderThickness, textWidth, roundness) {
+function testRectangleSize(canvas, context, metrics, fontsize, borderThickness, textWidth, textHeight, borderRadius) {
     var sizeWidth = context.canvas.clientWidth;
     var sizeHeight = context.canvas.clientHeight;
 
-    var auxWidth = textWidth + (roundness) - borderThickness;
-    var auxHeight = fontsize * 1.4 + borderThickness + (roundness * 4) + (borderThickness * 2);
-    auxWidth /= (0.25 * fontsize);
-    auxHeight /= (0.5 * fontsize)
+    // var auxWidth = textWidth + (borderRadius) - borderThickness;
+    // var auxHeight = fontsize * 1.4 + borderThickness + (borderRadius * 4) + (borderThickness * 2);
+    // var auxWidth = (textWidth + borderRadius - borderThickness) / (0.25 * fontsize);
+    var auxWidth = (textWidth) / (0.4 * fontsize);
+    // var auxHeight = (fontsize * 1.4 + borderThickness + (borderRadius * 4) + (borderThickness * 2)) / (0.5 * fontsize);
+    var auxHeight = (textHeight + borderThickness) / (0.4 * fontsize);
+    // auxWidth /= (0.25 * fontsize);
+    // auxHeight /= (0.5 * fontsize);
     console.log(`auxWidth: ${auxWidth}`);
     // console.log(`auxWidth / (0.25 * fontsize): ${auxWidth / (0.25 * fontsize)}`);
     console.log(`auxHeight: ${auxHeight}`);
